@@ -408,11 +408,11 @@
 
                 if(isCompactView && !isExpanded){
                     doctorCard.innerHTML = `
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 sm:gap-4">
                         <span class="text-slate-400 font-semibold">${index + 1}.</span>
                         <div class="status-dot rounded-full ${status.color}"></div>
-                        <h3 class="flex-grow text-lg font-bold text-slate-800">${doctor.name}</h3>
-                        <button data-id="${doctor.id}" class="expand-one-btn text-slate-500 p-2 w-10 h-10 rounded-lg hover:bg-slate-200"><i class="fas fa-caret-down"></i></button>
+                        <h3 class="flex-grow text-lg font-bold text-slate-800 truncate min-w-0">${doctor.name}</h3>
+                        <button data-id="${doctor.id}" class="expand-one-btn flex-shrink-0 text-slate-500 p-2 w-10 h-10 rounded-lg hover:bg-slate-200"><i class="fas fa-caret-down"></i></button>
                         <button data-id="${doctor.id}" class="visit-btn flex-shrink-0 bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">Visita</button>
                     </div>`;
                 } else {
