@@ -224,7 +224,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURAZIONE DA MODIFICARE ---
+        // --- TUA CONFIGURAZIONE FIREBASE ---
         const firebaseConfig = {
           apiKey: "AIzaSyCM3gKBI2OasWx2ELaiKq0MImrqMPpoLrs",
           authDomain: "gestionale-medici-a4f6e.firebaseapp.com",
@@ -233,14 +233,7 @@
           messagingSenderId: "53969180184",
           appId: "1:53969180184:web:42ec154d8e71ff99e6156d"
         };
-        const appId = 'gestionale-medici-a4f6e'; 
         // ------------------------------------
-
-
-        if (!firebaseConfig.apiKey) {
-            document.body.innerHTML = '<div class="h-screen flex items-center justify-center"><div class="text-center p-8 bg-white rounded-lg shadow-xl"><h1 class="text-2xl font-bold text-red-600">Errore di Configurazione</h1><p class="mt-2 text-slate-600">Per favore, inserisci la tua configurazione Firebase nel file index.html.</p></div></div>';
-            throw new Error("Configurazione Firebase mancante.");
-        }
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -277,8 +270,7 @@
         });
 
         function getCollectionRef(name) {
-            // Usa la variabile appId definita sopra per creare un percorso unico
-            return collection(db, `artifacts/${appId}/users/${userId}/${name}`);
+            return collection(db, `users/${userId}/${name}`);
         }
 
         function loadAllData() {
