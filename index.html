@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionale Medici PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .status-dot { min-width: 12px; min-height: 12px; width: 12px; height: 12px; }
+        .modal, .confirm-dialog { transition: opacity 0.2s ease; }
+        .modal-content, .confirm-dialog-content {
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .modal.open .modal-content, .confirm-dialog.open .confirm-dialog-content { opacity: 1; transform: scale(1); }
+        .sort-btn.active { background-color: #4f46e5; color: white; }
+        
+        .multiselect-container { position: relative; }
+        .multiselect-input-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            padding: 0.25rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            min-height: 44px;
+        }
+         .multiselect-input-wrapper:focus-within {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.4);
+        }
+        .multiselect-tag {
+            display: inline-flex;
+            align-items: center;
+            background-color: #e0e7ff;
+            color: #3730a3;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            margin: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .multiselect-tag-remove { margin-left: 0.5rem; cursor: pointer; }
+        .multiselect-input {
+            flex-grow: 1;
+            border: none;
+            outline: none;
+            padding: 0.5rem;
+            background: transparent;
+        }
+        .multiselect-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            max-height: 150px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-top: none;
+            border-radius: 0 0 0.5rem 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .multiselect-dropdown-item { padding: 0.5rem 0.75rem; cursor: pointer; }
+        .multiselect-dropdown-item:hover { background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-75 z-50 flex flex-col items-center justify-center">
+        <i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i>
+        <p class="mt-4 text-slate-700">Caricamento in corso...</p>
+    </div>
+
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-800">Gestionale Medici PRO</h1>
+            <p class="text-slate-600 mt-2">La tua lista medici avanzata, con database e funzioni extra.</p>
+        </header>
+
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold text-slate-700 mb-4">Aggiungi Nuovo Medico</h2>
+            <form id="add-doctor-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <input type="text" id="new-doctor-name" placeholder="Nome e Cognome" class="p-3 border border-slate-300 rounded-lg" required>
+                    <select id="new-doctor-specialization" class="p-3 border border-slate-300 rounded-lg">
+                        <option value="">Nessuna Specializzazione</option>
+                        <option value="Fisiatra">Fisiatra</option>
+                        <option value="Ortopedico">Ortopedico</option>
+                        <option value="Neuropsichiatra Infantile">Neuropsichiatra Infantile</option>
+                        <option value="Neurologo">Neurologo</option>
+                        <option value="Altro">Altro...</option>
+                    </select>
+                    <input type="text" id="new-doctor-specialization-other" placeholder="Specifica specializzazione" class="p-3 border border-slate-300 rounded-lg hidden md:col-span-2">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Distretti ASL</label>
+                    <div id="new-asl-multiselect" class="multiselect-container"></div>
+                </div>
+                <div id="new-locations-container" class="space-y-3"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4">
+                    <input type="tel" id="new-doctor-phone" placeholder="Telefono (generico)" class="p-3 border border-slate-300 rounded-lg">
+                    <input type="email" id="new-doctor-email" placeholder="Email (generica)" class="p-3 border border-slate-300 rounded-lg">
+                    <textarea id="new-doctor-notes" placeholder="Note..." class="md:col-span-2 p-3 border border-slate-300 rounded-lg" rows="2"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-transform hover:scale-105">
+                    Aggiungi Medico
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-center">
+                <input type="search" id="search-box" placeholder="Cerca medico o ASL..." class="w-full p-2 border border-slate-300 rounded-lg">
+                <select id="filter-specialization" class="w-full p-2 border border-slate-300 rounded-lg">
+                    <option value="all">Tutte le specializzazioni</option>
+                </select>
+                <div class="md:col-span-2 xl:col-span-1 flex flex-col sm:flex-row flex-wrap gap-2 justify-start md:justify-end">
+                    <button id="manage-districts-btn" class="bg-teal-500 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-teal-600">Gestisci Distretti</button>
+                    <button id="sort-name" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Nome</button>
+                    <button id="sort-status" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Stato</button>
+                    <button id="sort-visited" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Visita</button>
+                </div>
+            </div>
+            <div class="border-t border-slate-200 mt-4 pt-4 flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
+                <input type="file" id="import-csv-input" class="hidden" accept=".csv">
+                <button id="import-csv-btn" class="bg-sky-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-sky-600">Importa CSV</button>
+                <button id="export-csv" class="bg-emerald-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-emerald-600">Esporta CSV Completo</button>
+                <button id="export-names-btn" class="bg-purple-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-purple-600">Esporta Solo Nomi</button>
+            </div>
+        </div>
+
+        <div id="doctors-list" class="space-y-4"></div>
+    </div>
+
+    <!-- Modals -->
+    <div id="districts-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-30">
+        <div class="modal-content bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+            <h2 class="text-2xl font-semibold text-slate-700 mb-6">Gestisci Distretti ASL</h2>
+            <form id="add-district-form" class="flex gap-2 mb-4">
+                <input type="text" id="new-district-name" placeholder="Nome nuovo distretto" class="flex-grow p-3 border border-slate-300 rounded-lg" required>
+                <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700">Aggiungi</button>
+            </form>
+            <div id="districts-list-container" class="space-y-2 max-h-60 overflow-y-auto"></div>
+            <div class="mt-8 flex justify-end">
+                <button type="button" class="cancel-btn bg-slate-200 text-slate-700 font-semibold py-2 px-5 rounded-lg hover:bg-slate-300">Chiudi</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-20">
+        <div class="modal-content bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg">
+            <h2 class="text-2xl font-semibold text-slate-700 mb-6">Modifica Medico</h2>
+            <form id="edit-doctor-form" class="space-y-4">
+                <input type="hidden" id="edit-doctor-id">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <input type="text" id="edit-doctor-name" placeholder="Nome e Cognome" class="w-full p-3 border border-slate-300 rounded-lg" required>
+                    <select id="edit-doctor-specialization" class="w-full p-3 border border-slate-300 rounded-lg">
+                        <option value="">Nessuna Specializzazione</option>
+                        <option value="Fisiatra">Fisiatra</option>
+                        <option value="Ortopedico">Ortopedico</option>
+                        <option value="Neuropsichiatra Infantile">Neuropsichiatra Infantile</option>
+                        <option value="Neurologo">Neurologo</option>
+                        <option value="Altro">Altro...</option>
+                    </select>
+                     <input type="text" id="edit-doctor-specialization-other" placeholder="Specifica specializzazione" class="p-3 border border-slate-300 rounded-lg hidden md:col-span-2">
+                </div>
+                 <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Distretti ASL</label>
+                    <div id="edit-asl-multiselect" class="multiselect-container"></div>
+                </div>
+                <div id="edit-locations-container" class="space-y-3"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4">
+                    <input type="tel" id="edit-doctor-phone" placeholder="Telefono (generico)" class="w-full p-3 border border-slate-300 rounded-lg">
+                    <input type="email" id="edit-doctor-email" placeholder="Email (generica)" class="w-full p-3 border border-slate-300 rounded-lg">
+                    <textarea id="edit-doctor-notes" placeholder="Note..." class="w-full md:col-span-2 p-3 border border-slate-300 rounded-lg" rows="3"></textarea>
+                </div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button type="button" class="cancel-btn bg-slate-200 text-slate-700 font-semibold py-2 px-5 rounded-lg hover:bg-slate-300">Annulla</button>
+                    <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-indigo-700">Salva Modifiche</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="history-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-20">
+         <div class="modal-content bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg">
+             <h2 class="text-2xl font-semibold text-slate-700 mb-4">Storico Visite</h2>
+             <h3 id="history-doctor-name" class="text-lg text-indigo-600 font-bold mb-6"></h3>
+             <input type="hidden" id="history-doctor-id">
+             <ul id="history-list" class="space-y-2 max-h-80 overflow-y-auto"></ul>
+             <div class="mt-8 flex justify-end">
+                <button type="button" class="cancel-btn bg-slate-200 text-slate-700 font-semibold py-2 px-5 rounded-lg hover:bg-slate-300">Chiudi</button>
+             </div>
+         </div>
+    </div>
+    
+    <div id="confirm-dialog" class="confirm-dialog fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-30">
+        <div class="confirm-dialog-content bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm">
+            <h2 id="confirm-title" class="text-xl font-bold text-slate-800 mb-4">Sei sicuro?</h2>
+            <p id="confirm-message" class="text-slate-600 mb-6">Questa azione è irreversibile.</p>
+            <div class="flex justify-end space-x-4">
+                <button id="confirm-cancel-btn" class="bg-slate-200 text-slate-700 font-semibold py-2 px-5 rounded-lg hover:bg-slate-300">Annulla</button>
+                <button id="confirm-ok-btn" class="bg-red-500 text-white font-semibold py-2 px-5 rounded-lg hover:bg-red-600">Conferma</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- CONFIGURAZIONE DA MODIFICARE ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyCM3gKBI2OasWx2ELaiKq0MImrqMPpoLrs",
+          authDomain: "gestionale-medici-a4f6e.firebaseapp.com",
+          projectId: "gestionale-medici-a4f6e",
+          storageBucket: "gestionale-medici-a4f6e.firebasestorage.app",
+          messagingSenderId: "53969180184",
+          appId: "1:53969180184:web:42ec154d8e71ff99e6156d"
+        };
+        const appId = 'gestionale-medici-a4f6e'; 
+        // ------------------------------------
+
+
+        if (!firebaseConfig.apiKey) {
+            document.body.innerHTML = '<div class="h-screen flex items-center justify-center"><div class="text-center p-8 bg-white rounded-lg shadow-xl"><h1 class="text-2xl font-bold text-red-600">Errore di Configurazione</h1><p class="mt-2 text-slate-600">Per favore, inserisci la tua configurazione Firebase nel file index.html.</p></div></div>';
+            throw new Error("Configurazione Firebase mancante.");
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        setLogLevel('error');
+
+        let doctors = [];
+        let masterDistricts = [];
+        let currentSort = { key: 'visited', order: 'asc' };
+        let currentSearch = '';
+        let currentSpecializationFilter = 'all';
+        let userId = null;
+        let isInitialLoad = true;
+
+        const ui = {
+            loadingOverlay: document.getElementById('loading-overlay'),
+            addForm: document.getElementById('add-doctor-form'),
+            doctorsList: document.getElementById('doctors-list'),
+            editModal: document.getElementById('edit-modal'),
+            historyModal: document.getElementById('history-modal'),
+            historyList: document.getElementById('history-list'),
+            districtsModal: document.getElementById('districts-modal'),
+            searchBox: document.getElementById('search-box'),
+            specializationFilter: document.getElementById('filter-specialization'),
+        };
+        
+        function getSpecializationFromForm(selectEl, otherEl) {
+            return selectEl.value === 'Altro' ? otherEl.value.trim() : selectEl.value;
+        }
+
+        onAuthStateChanged(auth, user => {
+            if (user) { userId = user.uid; loadAllData(); } 
+            else { signInAnonymously(auth).catch(error => console.error("Anonymous sign-in error", error)); }
+        });
+
+        function getCollectionRef(name) {
+            // Usa la variabile appId definita sopra per creare un percorso unico
+            return collection(db, `artifacts/${appId}/users/${userId}/${name}`);
+        }
+
+        function loadAllData() {
+            onSnapshot(getCollectionRef('asl_districts'), (snapshot) => {
+                masterDistricts = snapshot.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => a.name.localeCompare(b.name));
+                newAslMultiSelect.updateOptions(masterDistricts.map(d => d.name));
+                editAslMultiSelect.updateOptions(masterDistricts.map(d => d.name));
+                renderDistrictsList();
+            });
+
+            onSnapshot(getCollectionRef('doctors'), async (snapshot) => {
+                if (isInitialLoad && snapshot.empty) { await populateWithInitialList(); }
+                if (isInitialLoad) { updateActiveSortButton(); isInitialLoad = false; }
+                
+                doctors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                populateSpecializationFilter();
+                renderDoctors();
+                ui.loadingOverlay.style.display = 'none';
+            }, error => console.error("Error loading doctors", error));
+        }
+
+        async function populateWithInitialList() {
+            const initialDoctors = ["PAPACCIO FRANCESCO", "DE ROSA MAURO", "DI PAOLA ENRICO", "MICCIO INES", "PRISCO MARIANNA", "CASALINO GAETANO", "MATTIA LUIGI", "RIZZO MARCO", "BORRELLI GIOVANNI", "CAPEZZA MARIA", "MATRONE CARLO", "BALZANO LUIGI", "SENATORE MAURIZIO", "CASTIELLO MARIO ROSARIO", "VERNIERO MARIAROSARIA", "BOTTA ANGELA", "COPPOLA CARLA", "FERRIERO MARIA", "SORRENTINO FRANCESCA", "NAPOLITANO GIOACCHINO", "COLELLA ΑΝΝΑ", "VELA MARIO", "IAZZETTA MARIA ROSARIA", "LUONGO RAFAELE", "LA MONTAGNA ANTONELLA", "FRIZZI LAURA", "CALEMMA ANIELLO", "SNICHELOTTO FRANCESCO", "AMETRANO ROBERTO"];
+            const batch = writeBatch(db);
+            initialDoctors.forEach(name => {
+                const newDocRef = doc(getCollectionRef('doctors'));
+                batch.set(newDocRef, { name, specialization: '', locations: [], phone: '', email: '', notes: '', visits: [] });
+            });
+            await batch.commit().catch(e => console.error("Error populating list", e));
+        }
+        
+        function populateSpecializationFilter() {
+            const specializations = [...new Set(doctors.map(d => d.specialization).filter(s => s))];
+            specializations.sort();
+            const currentVal = ui.specializationFilter.value;
+            ui.specializationFilter.innerHTML = '<option value="all">Tutte le specializzazioni</option>';
+            specializations.forEach(s => ui.specializationFilter.add(new Option(s, s)));
+            ui.specializationFilter.value = currentVal;
+        }
+
+        function getStatusInfo(visits = []) {
+            if (!visits?.length) return { color: 'bg-slate-300', text: 'Non visitato', days: Infinity };
+            const lastVisited = [...visits].sort((a,b) => new Date(b) - new Date(a))[0];
+            const diffDays = Math.ceil((new Date() - new Date(lastVisited)) / (1000 * 60 * 60 * 24));
+            if (diffDays <= 14) return { color: 'bg-green-500', text: `Visitato ${diffDays}gg fa`, days: diffDays };
+            if (diffDays <= 30) return { color: 'bg-orange-400', text: `Visitato ${diffDays}gg fa`, days: diffDays };
+            return { color: 'bg-red-500', text: `Visitato ${diffDays}gg fa`, days: diffDays };
+        }
+
+        function renderDoctors() {
+            let filteredDoctors = doctors.filter(doc => {
+                const term = currentSearch.toLowerCase();
+                const nameMatch = doc.name.toLowerCase().includes(term);
+                const aslMatch = doc.locations?.some(loc => loc.district.toLowerCase().includes(term));
+                return nameMatch || aslMatch;
+            });
+            if (currentSpecializationFilter !== 'all') {
+                filteredDoctors = filteredDoctors.filter(doc => doc.specialization === currentSpecializationFilter);
+            }
+
+            filteredDoctors.sort((a, b) => {
+                let valA, valB;
+                switch(currentSort.key) {
+                    case 'status': valA = getStatusInfo(a.visits).days; valB = getStatusInfo(b.visits).days; break;
+                    case 'visited': valA = a.visits?.length ? new Date(a.visits[a.visits.length-1]) : new Date(0); valB = b.visits?.length ? new Date(b.visits[b.visits.length-1]) : new Date(0); break;
+                    default: valA = a.name.toLowerCase(); valB = b.name.toLowerCase();
+                }
+                return currentSort.order === 'asc' ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+            });
+
+            ui.doctorsList.innerHTML = '';
+            if (filteredDoctors.length === 0) {
+                ui.doctorsList.innerHTML = `<div class="text-center bg-white p-8 rounded-xl shadow-md"><p class="text-slate-500">Nessun medico trovato.</p></div>`; return;
+            }
+            filteredDoctors.forEach((doctor, index) => {
+                const status = getStatusInfo(doctor.visits);
+                const locationsHTML = (doctor.locations || []).map(loc => `
+                    <div class="flex items-start mt-1">
+                        <i class="fa-solid fa-hospital-user fa-fw w-5 mr-1 text-slate-400 mt-1"></i>
+                        <span class="bg-indigo-100 text-indigo-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${loc.district}</span>
+                        ${loc.hours ? `<span class="text-sm text-slate-600"><i class="fa-solid fa-clock fa-fw mr-1 text-slate-400"></i>${loc.hours}</span>`: ''}
+                    </div>`).join('');
+
+                const doctorCard = document.createElement('div');
+                doctorCard.className = 'bg-white p-5 rounded-xl shadow-md transition-shadow hover:shadow-lg';
+                doctorCard.innerHTML = `
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div class="flex-grow w-full">
+                            <div class="flex items-center mb-3">
+                                <span class="text-lg font-semibold text-slate-400 w-8 text-right mr-2">${index + 1}.</span>
+                                <div class="status-dot rounded-full ${status.color} mr-3"></div>
+                                <h3 class="text-xl font-bold text-slate-800">${doctor.name}</h3>
+                            </div>
+                            <div class="pl-16 space-y-2">
+                                ${doctor.specialization ? `<p class="text-sm font-semibold text-indigo-700"><i class="fa-solid fa-user-doctor fa-fw w-5 mr-1 text-slate-400"></i>${doctor.specialization}</p>` : ''}
+                                ${locationsHTML}
+                                <div class="pt-2 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-slate-600">
+                                    ${doctor.phone ? `<p class="text-sm"><i class="fa-solid fa-phone fa-fw w-5 mr-1 text-slate-400"></i>${doctor.phone}</p>` : ''}
+                                    ${doctor.email ? `<p class="text-sm"><i class="fa-solid fa-envelope fa-fw w-5 mr-1 text-slate-400"></i>${doctor.email}</p>` : ''}
+                                </div>
+                                ${doctor.notes ? `<p class="text-sm mt-2"><i class="fa-solid fa-note-sticky fa-fw w-5 mr-1 text-slate-400"></i><strong>Note:</strong> ${doctor.notes}</p>` : ''}
+                                <p class="text-xs italic mt-2">${status.text}</p>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 flex flex-col gap-2 w-full sm:w-auto self-end sm:self-center">
+                            <button data-id="${doctor.id}" class="visit-btn bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 w-full">Segna Visita</button>
+                            <button data-id="${doctor.id}" class="history-btn bg-cyan-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-cyan-600 w-full">Storico</button>
+                            <button data-id="${doctor.id}" class="edit-btn bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 w-full">Modifica</button>
+                            <button data-id="${doctor.id}" class="delete-btn bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 w-full">Elimina</button>
+                        </div>
+                    </div>
+                `;
+                ui.doctorsList.appendChild(doctorCard);
+            });
+        }
+        
+        function getLocationsDataFromForm(containerId){
+            const container = document.getElementById(containerId);
+            const locations = [];
+            container.querySelectorAll('.location-hours-row').forEach(row => {
+                locations.push({
+                    district: row.dataset.district,
+                    hours: row.querySelector('input').value.trim()
+                });
+            });
+            return locations;
+        }
+
+        ui.addForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newDoctor = {
+                name: ui.addForm.querySelector('#new-doctor-name').value.trim(),
+                specialization: getSpecializationFromForm(ui.addForm.querySelector('#new-doctor-specialization'), ui.addForm.querySelector('#new-doctor-specialization-other')),
+                locations: getLocationsDataFromForm('new-locations-container'),
+                phone: ui.addForm.querySelector('#new-doctor-phone').value.trim(),
+                email: ui.addForm.querySelector('#new-doctor-email').value.trim(),
+                notes: ui.addForm.querySelector('#new-doctor-notes').value.trim(),
+                visits: []
+            };
+            await addDoc(getCollectionRef('doctors'), newDoctor).catch(err => console.error(err));
+            ui.addForm.reset();
+            ui.addForm.querySelector('#new-doctor-specialization-other').classList.add('hidden');
+            newAslMultiSelect.reset();
+        });
+
+        ui.doctorsList.addEventListener('click', async (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            const id = button.dataset.id;
+            const doctorRef = doc(getCollectionRef('doctors'), id);
+            const doctor = doctors.find(d => d.id === id);
+            if (button.classList.contains('visit-btn')) {
+                await updateDoc(doctorRef, { visits: [...(doctor.visits || []), new Date().toISOString()] });
+            } else if (button.classList.contains('history-btn')) { showHistoryModal(doctor); } 
+            else if (button.classList.contains('edit-btn')) { showEditModal(doctor); } 
+            else if (button.classList.contains('delete-btn')) { 
+                showConfirmDialog('Elimina Medico', `Sei sicuro di voler eliminare ${doctor.name}?`, () => deleteDoc(doctorRef));
+            }
+        });
+
+        ui.searchBox.addEventListener('input', e => { currentSearch = e.target.value; renderDoctors(); });
+        ui.specializationFilter.addEventListener('change', e => { currentSpecializationFilter = e.target.value; renderDoctors(); });
+        
+        function updateActiveSortButton() {
+            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`sort-${currentSort.key}`)?.classList.add('active');
+        }
+
+        ['sort-name', 'sort-status', 'sort-visited'].forEach(btnId => {
+            document.getElementById(btnId).addEventListener('click', (e) => {
+                const key = btnId.split('-')[1];
+                currentSort.key === key ? currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc' : (currentSort.key = key, currentSort.order = 'asc');
+                updateActiveSortButton();
+                renderDoctors();
+            });
+        });
+        
+        function downloadFile(content, fileName) {
+            const link = document.createElement("a");
+            link.href = encodeURI(content);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        document.getElementById('export-csv').addEventListener('click', () => {
+             const headers = ['Nome', 'Specializzazione', 'Locations', 'Telefono', 'Email', 'Note', 'Ultima Visita'];
+             const sorted = [...doctors].sort((a, b) => a.name.localeCompare(b.name));
+             const rows = sorted.map(doc => {
+                 const lastVisit = doc.visits?.length ? new Date([...doc.visits].pop()).toLocaleDateString('it-IT') : '';
+                 const locationsString = (doc.locations || []).map(l => `${l.district}:${l.hours}`).join('; ');
+                 return [`"${doc.name||''}"`, `"${doc.specialization||''}"`, `"${locationsString}"`, `"${doc.phone||''}"`, `"${doc.email||''}"`, `"${(doc.notes||'').replace(/"/g,'""')}"`, `"${lastVisit}"`].join(',');
+             });
+             downloadFile("data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n'), "elenco_medici_completo.csv");
+        });
+
+        document.getElementById('export-names-btn').addEventListener('click', () => {
+            const headers = ['Nome'];
+            const sorted = [...doctors].sort((a, b) => a.name.localeCompare(b.name));
+            const rows = sorted.map(doc => `"${doc.name || ''}"`);
+            downloadFile("data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n'), "elenco_medici_nomi.csv");
+        });
+
+        document.getElementById('import-csv-btn').addEventListener('click', () => document.getElementById('import-csv-input').click());
+        document.getElementById('import-csv-input').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            if (file) {
+                reader.onload = e => { parseAndImportCSV(e.target.result); event.target.value = ''; };
+                reader.readAsText(file);
+            }
+        });
+
+        async function parseAndImportCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const headers = lines.shift().split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            const headerMap = {};
+            ['Nome', 'Specializzazione', 'Locations', 'Telefono', 'Email', 'Note', 'Ultima Visita'].forEach(h => {
+                const index = headers.indexOf(h);
+                if (index !== -1) headerMap[h] = index;
+            });
+            if(headerMap['Nome'] === undefined) { showInfoDialog("Errore", "La colonna 'Nome' è obbligatoria."); return; }
+            let added = 0, skipped = 0;
+            const batch = writeBatch(db);
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                const name = values[headerMap['Nome']];
+                if (!name || doctors.some(d => d.name.toLowerCase() === name.toLowerCase())) { skipped++; return; }
+                const locations = (values[headerMap['Locations']] || '').split(';').map(l => {
+                    const parts = l.split(':');
+                    return { district: parts[0]?.trim(), hours: parts[1]?.trim() || '' };
+                }).filter(l => l.district);
+                
+                const newDoctor = {
+                    name, specialization: values[headerMap['Specializzazione']] || '', 
+                    locations,
+                    phone: values[headerMap['Telefono']] || '', email: values[headerMap['Email']] || '',
+                    notes: values[headerMap['Note']] || '', visits: []
+                };
+                const visitStr = values[headerMap['Ultima Visita']];
+                if (visitStr) {
+                    const parts = visitStr.split('/');
+                    if (parts.length === 3) {
+                       const date = new Date(parts[2], parts[1] - 1, parts[0]);
+                       if(!isNaN(date)) newDoctor.visits.push(date.toISOString());
+                    }
+                }
+                batch.set(doc(getCollectionRef('doctors')), newDoctor);
+                added++;
+            });
+            await batch.commit();
+            showInfoDialog("Importazione Completata", `${added} medici aggiunti, ${skipped} saltati.`);
+        }
+        
+        function showEditModal(doctor) {
+            const form = ui.editModal.querySelector('form');
+            form.querySelector('#edit-doctor-id').value = doctor.id;
+            form.querySelector('#edit-doctor-name').value = doctor.name || '';
+            
+            const spec = doctor.specialization || '';
+            const specSelect = form.querySelector('#edit-doctor-specialization');
+            const specOther = form.querySelector('#edit-doctor-specialization-other');
+            const standardSpecs = Array.from(specSelect.options).map(o => o.value);
+            if (standardSpecs.includes(spec)) {
+                specSelect.value = spec;
+                specOther.classList.add('hidden');
+            } else if (spec) {
+                specSelect.value = 'Altro';
+                specOther.value = spec;
+                specOther.classList.remove('hidden');
+            } else {
+                specSelect.value = '';
+                specOther.classList.add('hidden');
+            }
+            
+            editAslMultiSelect.setSelected((doctor.locations || []).map(l => l.district));
+            
+            form.querySelector('#edit-doctor-phone').value = doctor.phone || '';
+            form.querySelector('#edit-doctor-email').value = doctor.email || '';
+            form.querySelector('#edit-doctor-notes').value = doctor.notes || '';
+            ui.editModal.classList.add('open');
+            ui.editModal.classList.remove('hidden');
+        }
+
+        ui.editModal.querySelector('.cancel-btn').addEventListener('click', () => { ui.editModal.classList.add('hidden'); ui.editModal.classList.remove('open'); });
+
+        document.getElementById('edit-doctor-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const id = form.querySelector('#edit-doctor-id').value;
+            const updatedData = {
+                name: form.querySelector('#edit-doctor-name').value,
+                specialization: getSpecializationFromForm(form.querySelector('#edit-doctor-specialization'), form.querySelector('#edit-doctor-specialization-other')),
+                locations: getLocationsDataFromForm('edit-locations-container'),
+                phone: form.querySelector('#edit-doctor-phone').value,
+                email: form.querySelector('#edit-doctor-email').value,
+                notes: form.querySelector('#edit-doctor-notes').value,
+            };
+            await updateDoc(doc(getCollectionRef('doctors'), id), updatedData);
+            ui.editModal.classList.add('hidden');
+            ui.editModal.classList.remove('open');
+        });
+
+        function showHistoryModal(doctor) {
+            ui.historyModal.querySelector('#history-doctor-name').textContent = doctor.name;
+            ui.historyModal.querySelector('#history-doctor-id').value = doctor.id;
+            ui.historyList.innerHTML = !doctor.visits?.length ? '<li class="text-slate-500">Nessuna visita registrata.</li>' : 
+                [...doctor.visits].sort((a,b) => new Date(b) - new Date(a)).map(visit => 
+                    `<li class="bg-slate-100 p-3 rounded-md text-sm flex justify-between items-center">
+                        <span>${new Date(visit).toLocaleString('it-IT', { dateStyle: 'full', timeStyle: 'short'})}</span>
+                        <button data-visit="${visit}" class="delete-visit-btn text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </li>`
+                ).join('');
+            ui.historyModal.classList.add('open');
+            ui.historyModal.classList.remove('hidden');
+        }
+        
+        ui.historyList.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.delete-visit-btn');
+            if (!btn) return;
+            const visitToDelete = btn.dataset.visit;
+            const doctorId = ui.historyModal.querySelector('#history-doctor-id').value;
+            const doctor = doctors.find(d => d.id === doctorId);
+            showConfirmDialog('Elimina Visita', `Eliminare la visita del ${new Date(visitToDelete).toLocaleDateString('it-IT')}?`, async () => {
+                const newVisits = doctor.visits.filter(v => v !== visitToDelete);
+                await updateDoc(doc(getCollectionRef('doctors'), doctorId), { visits: newVisits });
+                showHistoryModal({ ...doctor, visits: newVisits });
+            });
+        });
+        ui.historyModal.querySelector('.cancel-btn').addEventListener('click', () => { ui.historyModal.classList.add('hidden'); ui.historyModal.classList.remove('open'); });
+
+        function setupSpecializationOtherField(selectEl, otherEl) {
+            selectEl.addEventListener('change', () => otherEl.classList.toggle('hidden', selectEl.value !== 'Altro'));
+        }
+        setupSpecializationOtherField(document.getElementById('new-doctor-specialization'), document.getElementById('new-doctor-specialization-other'));
+        setupSpecializationOtherField(document.getElementById('edit-doctor-specialization'), document.getElementById('edit-doctor-specialization-other'));
+
+        // District Management Modal
+        document.getElementById('manage-districts-btn').addEventListener('click', () => {
+            ui.districtsModal.classList.add('open');
+            ui.districtsModal.classList.remove('hidden');
+        });
+        ui.districtsModal.querySelector('.cancel-btn').addEventListener('click', () => {
+            ui.districtsModal.classList.add('hidden');
+            ui.districtsModal.classList.remove('open');
+        });
+
+        function renderDistrictsList() {
+            const container = document.getElementById('districts-list-container');
+            container.innerHTML = '';
+            masterDistricts.forEach(d => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center bg-slate-100 p-2 rounded-md';
+                item.dataset.id = d.id;
+                item.innerHTML = `
+                    <div class="flex-grow">
+                        <span class="text-slate-800 district-name">${d.name}</span>
+                        <input type="text" class="district-edit-input hidden w-full p-1 border rounded" value="${d.name}">
+                    </div>
+                    <div class="flex items-center ml-2">
+                        <button class="edit-district-btn text-blue-500 hover:text-blue-700 p-1"><i class="fa-solid fa-pencil"></i></button>
+                        <button class="delete-district-btn text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        <button class="save-district-btn hidden text-green-500 hover:text-green-700 p-1"><i class="fa-solid fa-check"></i></button>
+                        <button class="cancel-edit-district-btn hidden text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-times"></i></button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+        
+        document.getElementById('add-district-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-district-name');
+            const name = input.value.trim();
+            if (name && !masterDistricts.some(d => d.name.toLowerCase() === name.toLowerCase())) {
+                await addDoc(getCollectionRef('asl_districts'), { name });
+                input.value = '';
+            }
+        });
+
+        document.getElementById('districts-list-container').addEventListener('click', async (e) => {
+            const itemContainer = e.target.closest('.flex.justify-between');
+            if (!itemContainer) return;
+            
+            const id = itemContainer.dataset.id;
+            const nameSpan = itemContainer.querySelector('.district-name');
+            const input = itemContainer.querySelector('.district-edit-input');
+            const editBtn = itemContainer.querySelector('.edit-district-btn');
+            const deleteBtn = itemContainer.querySelector('.delete-district-btn');
+            const saveBtn = itemContainer.querySelector('.save-district-btn');
+            const cancelBtn = itemContainer.querySelector('.cancel-edit-district-btn');
+
+            if (e.target.closest('.edit-district-btn')) {
+                nameSpan.classList.add('hidden');
+                input.classList.remove('hidden');
+                input.focus();
+                editBtn.classList.add('hidden');
+                deleteBtn.classList.add('hidden');
+                saveBtn.classList.remove('hidden');
+                cancelBtn.classList.remove('hidden');
+            }
+
+            if (e.target.closest('.cancel-edit-district-btn')) {
+                nameSpan.classList.remove('hidden');
+                input.classList.add('hidden');
+                input.value = nameSpan.textContent;
+                editBtn.classList.remove('hidden');
+                deleteBtn.classList.remove('hidden');
+                saveBtn.classList.add('hidden');
+                cancelBtn.classList.add('hidden');
+            }
+
+            if (e.target.closest('.save-district-btn')) {
+                const oldName = nameSpan.textContent;
+                const newName = input.value.trim();
+
+                if (newName && newName !== oldName) {
+                    const batch = writeBatch(db);
+                    batch.update(doc(getCollectionRef('asl_districts'), id), { name: newName });
+                    doctors.forEach(doctor => {
+                        const newLocations = doctor.locations?.map(loc => loc.district === oldName ? {...loc, district: newName} : loc);
+                        if(JSON.stringify(newLocations) !== JSON.stringify(doctor.locations)){
+                             batch.update(doc(getCollectionRef('doctors'), doctor.id), { locations: newLocations });
+                        }
+                    });
+                    await batch.commit();
+                }
+                nameSpan.classList.remove('hidden');
+                input.classList.add('hidden');
+                editBtn.classList.remove('hidden');
+                deleteBtn.classList.remove('hidden');
+                saveBtn.classList.add('hidden');
+                cancelBtn.classList.add('hidden');
+            }
+
+            if (e.target.closest('.delete-district-btn')) {
+                const district = masterDistricts.find(d => d.id === id);
+                showConfirmDialog('Elimina Distretto', `Sei sicuro di voler eliminare "${district.name}"? Verrà rimosso da tutti i medici.`, async () => {
+                   const batch = writeBatch(db);
+                   batch.delete(doc(getCollectionRef('asl_districts'), id));
+                   doctors.forEach(doctor => {
+                       const newLocations = doctor.locations?.filter(l => l.district !== district.name);
+                       if(JSON.stringify(newLocations) !== JSON.stringify(doctor.locations)){
+                            batch.update(doc(getCollectionRef('doctors'), doctor.id), { locations: newLocations });
+                       }
+                   });
+                   await batch.commit();
+                });
+            }
+        });
+
+        // --- Multi-select Component ---
+        function createMultiSelect(containerId, onSelectionChange) {
+            const container = document.getElementById(containerId);
+            let options = [];
+            let selected = [];
+
+            container.innerHTML = `
+                <div class="multiselect-input-wrapper">
+                    <div class="multiselect-tags-container flex flex-wrap items-center"></div>
+                    <input type="text" class="multiselect-input" placeholder="Seleziona o cerca...">
+                </div>
+                <div class="multiselect-dropdown hidden"></div>
+            `;
+
+            const tagsContainer = container.querySelector('.multiselect-tags-container');
+            const input = container.querySelector('.multiselect-input');
+            const dropdown = container.querySelector('.multiselect-dropdown');
+
+            function renderTags() {
+                tagsContainer.innerHTML = '';
+                selected.forEach(value => {
+                    const tag = document.createElement('div');
+                    tag.className = 'multiselect-tag';
+                    tag.textContent = value;
+                    const removeBtn = document.createElement('i');
+                    removeBtn.className = 'fas fa-times multiselect-tag-remove ml-2';
+                    removeBtn.dataset.value = value;
+                    tag.appendChild(removeBtn);
+                    tagsContainer.appendChild(tag);
+                });
+            }
+
+            function renderDropdown(filter = '') {
+                dropdown.innerHTML = '';
+                const availableOptions = options.filter(opt => !selected.includes(opt) && opt.toLowerCase().includes(filter.toLowerCase()));
+                if(availableOptions.length === 0){
+                    dropdown.classList.add('hidden'); return;
+                }
+                dropdown.classList.remove('hidden');
+                availableOptions.forEach(opt => {
+                    const item = document.createElement('div');
+                    item.className = 'multiselect-dropdown-item';
+                    item.textContent = opt;
+                    item.dataset.value = opt;
+                    dropdown.appendChild(item);
+                });
+            }
+
+            input.addEventListener('focus', () => renderDropdown(input.value));
+            input.addEventListener('input', () => renderDropdown(input.value));
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target)) dropdown.classList.add('hidden');
+            });
+            
+            dropdown.addEventListener('click', e => {
+                if (e.target.classList.contains('multiselect-dropdown-item')) {
+                    const value = e.target.dataset.value;
+                    if (!selected.includes(value)) {
+                        selected.push(value);
+                        input.value = '';
+                        renderTags();
+                        onSelectionChange(selected);
+                    }
+                    renderDropdown();
+                    input.focus();
+                }
+            });
+
+            tagsContainer.addEventListener('click', e => {
+                if (e.target.classList.contains('multiselect-tag-remove')) {
+                    selected = selected.filter(val => val !== e.target.dataset.value);
+                    renderTags();
+                    onSelectionChange(selected);
+                    renderDropdown();
+                }
+            });
+            
+            return {
+                updateOptions: (newOptions) => { options = newOptions; },
+                setSelected: (newSelected) => { selected = [...newSelected]; renderTags(); onSelectionChange(selected); },
+                getSelected: () => selected,
+                reset: () => { selected = []; renderTags(); onSelectionChange(selected); }
+            }
+        }
+        
+        const newAslMultiSelect = createMultiSelect('new-asl-multiselect', (selected) => {
+            const container = document.getElementById('new-locations-container');
+            const currentData = getLocationsDataFromForm('new-locations-container');
+            container.innerHTML = '';
+            selected.forEach(district => {
+                const existing = currentData.find(d => d.district === district);
+                const hours = existing ? existing.hours : '';
+                const row = document.createElement('div');
+                row.className = 'location-hours-row flex items-center gap-2';
+                row.dataset.district = district;
+                row.innerHTML = `<label class="w-1/3 text-sm text-slate-600 text-right pr-2">${district}:</label><input type="text" value="${hours}" placeholder="Orari per ${district}" class="p-2 border border-slate-300 rounded-lg w-2/3">`;
+                container.appendChild(row);
+            });
+        });
+
+        const editAslMultiSelect = createMultiSelect('edit-asl-multiselect', (selected) => {
+            const container = document.getElementById('edit-locations-container');
+            const doctorId = ui.editModal.querySelector('#edit-doctor-id').value;
+            const doctor = doctors.find(d => d.id === doctorId);
+            const currentData = doctor ? doctor.locations : [];
+            container.innerHTML = '';
+             selected.forEach(district => {
+                const existing = currentData.find(d => d.district === district);
+                const hours = existing ? existing.hours : '';
+                const row = document.createElement('div');
+                row.className = 'location-hours-row flex items-center gap-2';
+                row.dataset.district = district;
+                row.innerHTML = `<label class="w-1/3 text-sm text-slate-600 text-right pr-2">${district}:</label><input type="text" value="${hours}" placeholder="Orari per ${district}" class="p-2 border border-slate-300 rounded-lg w-2/3">`;
+                container.appendChild(row);
+            });
+        });
+
+        const confirmDialog = document.getElementById('confirm-dialog');
+        let confirmCallback = null;
+
+        function showConfirmDialog(title, message, callback) {
+            const okBtn = confirmDialog.querySelector('#confirm-ok-btn');
+            confirmDialog.querySelector('#confirm-title').textContent = title;
+            confirmDialog.querySelector('#confirm-message').innerHTML = message.replace(/\n/g, '<br>');
+            confirmDialog.querySelector('#confirm-cancel-btn').style.display = '';
+            okBtn.textContent = 'Conferma';
+            okBtn.className = 'bg-red-500 text-white font-semibold py-2 px-5 rounded-lg hover:bg-red-600';
+            confirmCallback = callback;
+            confirmDialog.classList.remove('hidden');
+            confirmDialog.classList.add('open');
+        }
+        
+        function showInfoDialog(title, message) {
+            const okBtn = confirmDialog.querySelector('#confirm-ok-btn');
+            confirmDialog.querySelector('#confirm-title').textContent = title;
+            confirmDialog.querySelector('#confirm-message').innerHTML = message.replace(/\n/g, '<br>');
+            confirmDialog.querySelector('#confirm-cancel-btn').style.display = 'none';
+            okBtn.textContent = 'Chiudi';
+            okBtn.className = 'bg-indigo-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-indigo-700';
+            confirmCallback = null;
+            confirmDialog.classList.remove('hidden');
+            confirmDialog.classList.add('open');
+        }
+
+        document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+            confirmDialog.classList.add('hidden');
+            confirmDialog.classList.remove('open');
+        });
+        document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
+            confirmDialog.classList.add('hidden');
+            confirmDialog.classList.remove('open');
+        });
+        
+    </script>
+</body>
+</html>
