@@ -280,7 +280,7 @@
         let currentSpecializationFilter = 'all';
         let userId = null;
         let unsubscribeDoctors, unsubscribeDistricts;
-        let isCompactView = false;
+        let isCompactView = true;
         let expandedDoctorId = null;
 
         const ui = {
@@ -552,7 +552,7 @@
             });
         });
 
-        ui.toggleViewBtn.innerHTML = `<i class="fa-solid fa-list-ul mr-2"></i>Vista Compatta`;
+        ui.toggleViewBtn.innerHTML = `<i class="fa-solid fa-table-list mr-2"></i>Mostra Dettagli`;
         ui.toggleViewBtn.addEventListener('click', () => {
             isCompactView = !isCompactView;
             expandedDoctorId = null;
