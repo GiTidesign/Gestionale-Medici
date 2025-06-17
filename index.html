@@ -161,7 +161,10 @@
                         <button id="sort-status" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Stato</button>
                         <button id="sort-visited" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Visita</button>
                     </div>
-                    <button id="manage-districts-btn" class="bg-teal-500 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-teal-600">Gestisci Distretti</button>
+                     <div class="flex flex-wrap gap-2 justify-center">
+                        <button id="manage-districts-btn" class="bg-teal-500 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-teal-600">Distretti</button>
+                        <button id="toggle-view-btn" class="bg-slate-500 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-slate-600"></button>
+                    </div>
                 </div>
                 <div class="border-t border-slate-200 pt-4 flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
                     <input type="file" id="import-csv-input" class="hidden" accept=".csv">
@@ -277,6 +280,7 @@
         let currentSpecializationFilter = 'all';
         let userId = null;
         let unsubscribeDoctors, unsubscribeDistricts;
+        let isCompactView = false;
 
         const ui = {
             authScreen: document.getElementById('auth-screen'),
@@ -295,6 +299,7 @@
             districtsModal: document.getElementById('districts-modal'),
             searchBox: document.getElementById('search-box'),
             specializationFilter: document.getElementById('filter-specialization'),
+            toggleViewBtn: document.getElementById('toggle-view-btn'),
         };
         
         function getSpecializationFromForm(selectEl, otherEl) {
@@ -395,47 +400,58 @@
             }
             filteredDoctors.forEach((doctor, index) => {
                 const status = getStatusInfo(doctor.visits);
-                const locationsHTML = (doctor.locations || []).map(loc => `
-                    <div class="flex items-start mt-1">
-                        <i class="fa-solid fa-hospital-user fa-fw w-5 mr-1 text-slate-400 mt-1"></i>
-                        <span class="bg-indigo-100 text-indigo-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${loc.district}</span>
-                        ${loc.hours ? `<span class="text-sm text-slate-600"><i class="fa-solid fa-clock fa-fw mr-1 text-slate-400"></i>${loc.hours}</span>`: ''}
-                    </div>`).join('');
-
                 const doctorCard = document.createElement('div');
                 doctorCard.className = 'bg-white p-5 rounded-xl shadow-md';
-                doctorCard.innerHTML = `
-                    <div class="flex flex-col sm:flex-row items-start gap-4">
-                        <div class="flex-grow w-full">
-                            <div class="flex items-center mb-3">
-                                <span class="text-lg font-semibold text-slate-400 w-8 text-right mr-2">${index + 1}.</span>
-                                <div class="status-dot rounded-full ${status.color} mr-3"></div>
-                                <h3 class="text-xl font-bold text-slate-800">${doctor.name}</h3>
-                            </div>
-                            <div class="pl-4 sm:pl-16 space-y-2">
-                                ${doctor.specialization ? `<p class="text-sm font-semibold text-indigo-700"><i class="fa-solid fa-user-doctor fa-fw w-5 mr-1 text-slate-400"></i>${doctor.specialization}</p>` : ''}
-                                ${locationsHTML}
-                                <div class="pt-2 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-slate-600">
-                                    ${doctor.phone ? `<p class="text-sm"><i class="fa-solid fa-phone fa-fw w-5 mr-1 text-slate-400"></i>${doctor.phone}</p>` : ''}
-                                    ${doctor.email ? `<p class="text-sm"><i class="fa-solid fa-envelope fa-fw w-5 mr-1 text-slate-400"></i>${doctor.email}</p>` : ''}
+
+                if(isCompactView){
+                    doctorCard.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <span class="text-slate-400 font-semibold">${index + 1}.</span>
+                        <div class="status-dot rounded-full ${status.color}"></div>
+                        <h3 class="flex-grow text-lg font-bold text-slate-800">${doctor.name}</h3>
+                        <button data-id="${doctor.id}" class="visit-btn flex-shrink-0 bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">Visita</button>
+                    </div>`;
+                } else {
+                    const locationsHTML = (doctor.locations || []).map(loc => `
+                        <div class="flex items-start mt-1">
+                            <i class="fa-solid fa-hospital-user fa-fw w-5 mr-1 text-slate-400 mt-1"></i>
+                            <span class="bg-indigo-100 text-indigo-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${loc.district}</span>
+                            ${loc.hours ? `<span class="text-sm text-slate-600"><i class="fa-solid fa-clock fa-fw mr-1 text-slate-400"></i>${loc.hours}</span>`: ''}
+                        </div>`).join('');
+                    doctorCard.innerHTML = `
+                        <div class="flex flex-col sm:flex-row items-start gap-4">
+                            <div class="flex-grow w-full">
+                                <div class="flex items-center mb-3">
+                                    <span class="text-lg font-semibold text-slate-400 w-8 text-right mr-2">${index + 1}.</span>
+                                    <div class="status-dot rounded-full ${status.color} mr-3"></div>
+                                    <h3 class="text-xl font-bold text-slate-800">${doctor.name}</h3>
                                 </div>
-                                ${doctor.notes ? `<p class="text-sm mt-2"><i class="fa-solid fa-note-sticky fa-fw w-5 mr-1 text-slate-400"></i><strong>Note:</strong> ${doctor.notes}</p>` : ''}
-                                <p class="text-xs italic mt-2">${status.text}</p>
+                                <div class="pl-4 sm:pl-16 space-y-2">
+                                    ${doctor.specialization ? `<p class="text-sm font-semibold text-indigo-700"><i class="fa-solid fa-user-doctor fa-fw w-5 mr-1 text-slate-400"></i>${doctor.specialization}</p>` : ''}
+                                    ${locationsHTML}
+                                    <div class="pt-2 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-slate-600">
+                                        ${doctor.phone ? `<p class="text-sm"><i class="fa-solid fa-phone fa-fw w-5 mr-1 text-slate-400"></i>${doctor.phone}</p>` : ''}
+                                        ${doctor.email ? `<p class="text-sm"><i class="fa-solid fa-envelope fa-fw w-5 mr-1 text-slate-400"></i>${doctor.email}</p>` : ''}
+                                    </div>
+                                    ${doctor.notes ? `<p class="text-sm mt-2"><i class="fa-solid fa-note-sticky fa-fw w-5 mr-1 text-slate-400"></i><strong>Note:</strong> ${doctor.notes}</p>` : ''}
+                                    <p class="text-xs italic mt-2">${status.text}</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="border-t mt-4 pt-4 flex items-center gap-2">
-                         <button data-id="${doctor.id}" class="visit-btn flex-grow bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">Segna Visita</button>
-                         <div class="relative">
-                            <button data-id="${doctor.id}" class="actions-menu-btn p-2 w-12 h-10 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                            <div data-id="${doctor.id}" class="actions-dropdown hidden absolute right-0 bottom-full mb-2 w-40 bg-white rounded-md shadow-lg border z-10">
-                                <a href="#" data-id="${doctor.id}" class="history-btn block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Storico</a>
-                                <a href="#" data-id="${doctor.id}" class="edit-btn block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Modifica</a>
-                                <a href="#" data-id="${doctor.id}" class="delete-btn block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50">Elimina</a>
+                        <div class="border-t sm:border-none w-full sm:w-auto mt-4 sm:mt-0 pt-4 sm:pt-0 flex items-center gap-2">
+                             <button data-id="${doctor.id}" class="visit-btn flex-grow bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">Segna Visita</button>
+                             <div class="relative">
+                                <button data-id="${doctor.id}" class="actions-menu-btn p-2 w-12 h-10 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                <div data-id="${doctor.id}" class="actions-dropdown hidden absolute right-0 bottom-full mb-2 w-40 bg-white rounded-md shadow-lg border z-10">
+                                    <a href="#" data-id="${doctor.id}" class="history-btn block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Storico</a>
+                                    <a href="#" data-id="${doctor.id}" class="edit-btn block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Modifica</a>
+                                    <a href="#" data-id="${doctor.id}" class="delete-btn block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50">Elimina</a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
+
                 ui.doctorsList.appendChild(doctorCard);
             });
         }
@@ -518,6 +534,13 @@
                 updateActiveSortButton();
                 renderDoctors();
             });
+        });
+
+        ui.toggleViewBtn.innerHTML = `<i class="fa-solid fa-list-ul mr-2"></i>Vista Compatta`;
+        ui.toggleViewBtn.addEventListener('click', () => {
+            isCompactView = !isCompactView;
+            ui.toggleViewBtn.innerHTML = isCompactView ? `<i class="fa-solid fa-list-ul mr-2"></i>Mostra Dettagli` : `<i class="fa-solid fa-bars-staggered mr-2"></i>Vista Compatta`;
+            renderDoctors();
         });
         
         function downloadFile(content, fileName) {
@@ -973,3 +996,4 @@
     </script>
 </body>
 </html>
+
