@@ -95,7 +95,7 @@
         </div>
 
         <div class="max-w-5xl mx-auto">
-            <header class="mb-8 flex justify-between items-center">
+            <header class="mb-8 flex flex-wrap justify-between items-center gap-4">
                 <h1 class="text-2xl sm:text-4xl font-bold text-slate-800">Gestionale Medici PRO</h1>
                 <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-sm">Esci</button>
             </header>
@@ -133,20 +133,22 @@
                 </form>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-center">
+            <div class="bg-white p-6 rounded-xl shadow-lg mb-8 space-y-4">
+                 <div class="flex flex-col sm:flex-row gap-4">
                     <input type="search" id="search-box" placeholder="Cerca medico o ASL..." class="w-full p-2 border border-slate-300 rounded-lg">
-                    <select id="filter-specialization" class="w-full p-2 border border-slate-300 rounded-lg">
+                    <select id="filter-specialization" class="w-full sm:w-1/3 p-2 border border-slate-300 rounded-lg">
                         <option value="all">Tutte le specializzazioni</option>
                     </select>
-                    <div class="md:col-span-2 xl:col-span-1 flex flex-col sm:flex-row flex-wrap gap-2 justify-start md:justify-end">
-                        <button id="manage-districts-btn" class="bg-teal-500 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-teal-600">Gestisci Distretti</button>
+                </div>
+                 <div class="flex flex-col sm:flex-row flex-wrap gap-4 items-center justify-center sm:justify-between">
+                     <div class="flex flex-wrap gap-2 justify-center">
                         <button id="sort-name" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Nome</button>
                         <button id="sort-status" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Stato</button>
                         <button id="sort-visited" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Visita</button>
                     </div>
+                    <button id="manage-districts-btn" class="bg-teal-500 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-teal-600">Gestisci Distretti</button>
                 </div>
-                <div class="border-t border-slate-200 mt-4 pt-4 flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
+                <div class="border-t border-slate-200 pt-4 flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
                     <input type="file" id="import-csv-input" class="hidden" accept=".csv">
                     <button id="import-csv-btn" class="bg-sky-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-sky-600">Importa CSV</button>
                     <button id="export-csv" class="bg-emerald-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-emerald-600">Esporta CSV Completo</button>
@@ -311,6 +313,7 @@
 
         function loadAllData() {
             let isInitialLoad = true;
+            ui.loadingOverlay.style.display = 'flex';
 
             unsubscribeDistricts = onSnapshot(getCollectionRef('asl_districts'), (snapshot) => {
                 masterDistricts = snapshot.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => a.name.localeCompare(b.name));
