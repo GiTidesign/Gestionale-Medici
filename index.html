@@ -347,7 +347,11 @@
             });
 
             unsubscribeDoctors = onSnapshot(getCollectionRef('doctors'), (snapshot) => {
-                if (isInitialLoad) { updateActiveSortButton(); isInitialLoad = false; }
+                if (isInitialLoad) { 
+                    updateActiveSortButton();
+                    ui.toggleViewBtn.innerHTML = isCompactView ? `<i class="fa-solid fa-table-list mr-2"></i>Mostra Dettagli` : `<i class="fa-solid fa-list-ul mr-2"></i>Vista Compatta`;
+                    isInitialLoad = false;
+                }
                 
                 doctors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 populateSpecializationFilter();
@@ -552,7 +556,6 @@
             });
         });
 
-        ui.toggleViewBtn.innerHTML = `<i class="fa-solid fa-table-list mr-2"></i>Mostra Dettagli`;
         ui.toggleViewBtn.addEventListener('click', () => {
             isCompactView = !isCompactView;
             expandedDoctorId = null;
