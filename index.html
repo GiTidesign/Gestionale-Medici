@@ -340,8 +340,7 @@
                 renderDistrictsList();
             });
 
-            unsubscribeDoctors = onSnapshot(getCollectionRef('doctors'), async (snapshot) => {
-                if (isInitialLoad && snapshot.empty) { await populateWithInitialList(); }
+            unsubscribeDoctors = onSnapshot(getCollectionRef('doctors'), (snapshot) => {
                 if (isInitialLoad) { updateActiveSortButton(); isInitialLoad = false; }
                 
                 doctors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -349,16 +348,6 @@
                 renderDoctors();
                 ui.loadingOverlay.style.display = 'none';
             }, error => console.error("Error loading doctors", error));
-        }
-
-        async function populateWithInitialList() {
-            const initialDoctors = ["PAPACCIO FRANCESCO", "DE ROSA MAURO", "DI PAOLA ENRICO", "MICCIO INES", "PRISCO MARIANNA", "CASALINO GAETANO", "MATTIA LUIGI", "RIZZO MARCO", "BORRELLI GIOVANNI", "CAPEZZA MARIA", "MATRONE CARLO", "BALZANO LUIGI", "SENATORE MAURIZIO", "CASTIELLO MARIO ROSARIO", "VERNIERO MARIAROSARIA", "BOTTA ANGELA", "COPPOLA CARLA", "FERRIERO MARIA", "SORRENTINO FRANCESCA", "NAPOLITANO GIOACCHINO", "COLELLA ΑΝΝΑ", "VELA MARIO", "IAZZETTA MARIA ROSARIA", "LUONGO RAFAELE", "LA MONTAGNA ANTONELLA", "FRIZZI LAURA", "CALEMMA ANIELLO", "SNICHELOTTO FRANCESCO", "AMETRANO ROBERTO"];
-            const batch = writeBatch(db);
-            initialDoctors.forEach(name => {
-                const newDocRef = doc(getCollectionRef('doctors'));
-                batch.set(newDocRef, { name, specialization: '', locations: [], phone: '', email: '', notes: '', visits: [] });
-            });
-            await batch.commit().catch(e => console.error("Error populating list", e));
         }
         
         function populateSpecializationFilter() {
@@ -964,7 +953,7 @@
         ui.addDoctorToggle.addEventListener('click', () => {
             const container = ui.addFormContainer;
             const icon = ui.addDoctorIcon;
-            const isOpen = !container.classList.contains('max-h-0');
+            const isOpen = container.style.maxHeight !== '0px';
 
             if (isOpen) {
                 container.style.maxHeight = '0px';
@@ -973,9 +962,9 @@
                 icon.classList.remove('fa-minus');
                 icon.classList.add('fa-plus');
             } else {
+                container.style.paddingTop = '0';
+                container.style.paddingBottom = '1.5rem';
                 container.style.maxHeight = container.scrollHeight + "px";
-                container.classList.remove('max-h-0');
-                 container.classList.add('p-6', 'pt-0');
                 icon.classList.add('fa-minus');
                 icon.classList.remove('fa-plus');
             }
