@@ -73,6 +73,10 @@
         }
         .multiselect-dropdown-item { padding: 0.5rem 0.75rem; cursor: pointer; }
         .multiselect-dropdown-item:hover { background-color: #f3f4f6; }
+
+        .actions-dropdown {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
@@ -396,16 +400,16 @@
                     </div>`).join('');
 
                 const doctorCard = document.createElement('div');
-                doctorCard.className = 'bg-white p-5 rounded-xl shadow-md transition-shadow hover:shadow-lg';
+                doctorCard.className = 'bg-white p-5 rounded-xl shadow-md';
                 doctorCard.innerHTML = `
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div class="flex flex-col sm:flex-row items-start gap-4">
                         <div class="flex-grow w-full">
                             <div class="flex items-center mb-3">
                                 <span class="text-lg font-semibold text-slate-400 w-8 text-right mr-2">${index + 1}.</span>
                                 <div class="status-dot rounded-full ${status.color} mr-3"></div>
                                 <h3 class="text-xl font-bold text-slate-800">${doctor.name}</h3>
                             </div>
-                            <div class="pl-16 space-y-2">
+                            <div class="pl-4 sm:pl-16 space-y-2">
                                 ${doctor.specialization ? `<p class="text-sm font-semibold text-indigo-700"><i class="fa-solid fa-user-doctor fa-fw w-5 mr-1 text-slate-400"></i>${doctor.specialization}</p>` : ''}
                                 ${locationsHTML}
                                 <div class="pt-2 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-slate-600">
@@ -416,11 +420,16 @@
                                 <p class="text-xs italic mt-2">${status.text}</p>
                             </div>
                         </div>
-                        <div class="flex-shrink-0 flex flex-col gap-2 w-full sm:w-auto self-end sm:self-center">
-                            <button data-id="${doctor.id}" class="visit-btn bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 w-full">Segna Visita</button>
-                            <button data-id="${doctor.id}" class="history-btn bg-cyan-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-cyan-600 w-full">Storico</button>
-                            <button data-id="${doctor.id}" class="edit-btn bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 w-full">Modifica</button>
-                            <button data-id="${doctor.id}" class="delete-btn bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 w-full">Elimina</button>
+                    </div>
+                    <div class="border-t mt-4 pt-4 flex items-center gap-2">
+                         <button data-id="${doctor.id}" class="visit-btn flex-grow bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">Segna Visita</button>
+                         <div class="relative">
+                            <button data-id="${doctor.id}" class="actions-menu-btn p-2 w-12 h-10 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                            <div data-id="${doctor.id}" class="actions-dropdown hidden absolute right-0 bottom-full mb-2 w-40 bg-white rounded-md shadow-lg border z-10">
+                                <a href="#" data-id="${doctor.id}" class="history-btn block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Storico</a>
+                                <a href="#" data-id="${doctor.id}" class="edit-btn block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Modifica</a>
+                                <a href="#" data-id="${doctor.id}" class="delete-btn block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50">Elimina</a>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -458,17 +467,36 @@
         });
 
         ui.doctorsList.addEventListener('click', async (e) => {
-            const button = e.target.closest('button');
+            const button = e.target.closest('button, a');
             if (!button) return;
+            e.preventDefault();
+
             const id = button.dataset.id;
+            
+            if (button.classList.contains('actions-menu-btn')) {
+                const currentDropdown = document.querySelector(`.actions-dropdown[data-id="${id}"]`);
+                document.querySelectorAll('.actions-dropdown').forEach(dropdown => {
+                    if (dropdown !== currentDropdown) dropdown.classList.add('hidden');
+                });
+                currentDropdown.classList.toggle('hidden');
+                return;
+            }
+
             const doctorRef = doc(getCollectionRef('doctors'), id);
             const doctor = doctors.find(d => d.id === id);
+
             if (button.classList.contains('visit-btn')) {
                 await updateDoc(doctorRef, { visits: [...(doctor.visits || []), new Date().toISOString()] });
             } else if (button.classList.contains('history-btn')) { showHistoryModal(doctor); } 
             else if (button.classList.contains('edit-btn')) { showEditModal(doctor); } 
             else if (button.classList.contains('delete-btn')) { 
                 showConfirmDialog('Elimina Medico', `Sei sicuro di voler eliminare ${doctor.name}?`, () => deleteDoc(doctorRef));
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.relative')) {
+                 document.querySelectorAll('.actions-dropdown').forEach(dropdown => dropdown.classList.add('hidden'));
             }
         });
 
