@@ -77,72 +77,85 @@
 </head>
 <body class="p-4 sm:p-6 md:p-8">
 
-    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-75 z-50 flex flex-col items-center justify-center">
-        <i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i>
-        <p class="mt-4 text-slate-700">Caricamento in corso...</p>
+    <div id="auth-screen" class="fixed inset-0 bg-gray-100 z-50 flex items-center justify-center">
+        <div class="text-center p-8 bg-white rounded-lg shadow-xl">
+            <h1 class="text-2xl font-bold text-slate-800">Gestionale Medici</h1>
+            <p class="mt-2 mb-6 text-slate-600">Accedi per continuare</p>
+            <button id="login-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg inline-flex items-center">
+                <i class="fab fa-google mr-2"></i>
+                <span>Accedi con Google</span>
+            </button>
+        </div>
     </div>
+    
+    <div id="app-content" class="hidden">
+        <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-75 z-40 flex flex-col items-center justify-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i>
+            <p class="mt-4 text-slate-700">Caricamento in corso...</p>
+        </div>
 
-    <div class="max-w-5xl mx-auto">
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl sm:text-4xl font-bold text-slate-800">Gestionale Medici PRO</h1>
-            <p class="text-slate-600 mt-2">La tua lista medici avanzata, con database e funzioni extra.</p>
-        </header>
+        <div class="max-w-5xl mx-auto">
+            <header class="mb-8 flex justify-between items-center">
+                <h1 class="text-2xl sm:text-4xl font-bold text-slate-800">Gestionale Medici PRO</h1>
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-sm">Esci</button>
+            </header>
 
-        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h2 class="text-2xl font-semibold text-slate-700 mb-4">Aggiungi Nuovo Medico</h2>
-            <form id="add-doctor-form" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <input type="text" id="new-doctor-name" placeholder="Nome e Cognome" class="p-3 border border-slate-300 rounded-lg" required>
-                    <select id="new-doctor-specialization" class="p-3 border border-slate-300 rounded-lg">
-                        <option value="">Nessuna Specializzazione</option>
-                        <option value="Fisiatra">Fisiatra</option>
-                        <option value="Ortopedico">Ortopedico</option>
-                        <option value="Neuropsichiatra Infantile">Neuropsichiatra Infantile</option>
-                        <option value="Neurologo">Neurologo</option>
-                        <option value="Altro">Altro...</option>
+            <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                <h2 class="text-2xl font-semibold text-slate-700 mb-4">Aggiungi Nuovo Medico</h2>
+                <form id="add-doctor-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <input type="text" id="new-doctor-name" placeholder="Nome e Cognome" class="p-3 border border-slate-300 rounded-lg" required>
+                        <select id="new-doctor-specialization" class="p-3 border border-slate-300 rounded-lg">
+                            <option value="">Nessuna Specializzazione</option>
+                            <option value="Fisiatra">Fisiatra</option>
+                            <option value="Ortopedico">Ortopedico</option>
+                            <option value="Neuropsichiatra Infantile">Neuropsichiatra Infantile</option>
+                            <option value="Neurologo">Neurologo</option>
+                            <option value="Altro">Altro...</option>
+                        </select>
+                        <input type="text" id="new-doctor-specialization-other" placeholder="Specifica specializzazione" class="p-3 border border-slate-300 rounded-lg hidden md:col-span-2">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Distretti ASL</label>
+                        <div id="new-asl-multiselect" class="multiselect-container"></div>
+                    </div>
+                    <div id="new-locations-container" class="space-y-3"></div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4">
+                        <input type="tel" id="new-doctor-phone" placeholder="Telefono (generico)" class="p-3 border border-slate-300 rounded-lg">
+                        <input type="email" id="new-doctor-email" placeholder="Email (generica)" class="p-3 border border-slate-300 rounded-lg">
+                        <textarea id="new-doctor-notes" placeholder="Note..." class="md:col-span-2 p-3 border border-slate-300 rounded-lg" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-transform hover:scale-105">
+                        Aggiungi Medico
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-center">
+                    <input type="search" id="search-box" placeholder="Cerca medico o ASL..." class="w-full p-2 border border-slate-300 rounded-lg">
+                    <select id="filter-specialization" class="w-full p-2 border border-slate-300 rounded-lg">
+                        <option value="all">Tutte le specializzazioni</option>
                     </select>
-                    <input type="text" id="new-doctor-specialization-other" placeholder="Specifica specializzazione" class="p-3 border border-slate-300 rounded-lg hidden md:col-span-2">
+                    <div class="md:col-span-2 xl:col-span-1 flex flex-col sm:flex-row flex-wrap gap-2 justify-start md:justify-end">
+                        <button id="manage-districts-btn" class="bg-teal-500 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-teal-600">Gestisci Distretti</button>
+                        <button id="sort-name" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Nome</button>
+                        <button id="sort-status" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Stato</button>
+                        <button id="sort-visited" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Visita</button>
+                    </div>
                 </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Distretti ASL</label>
-                    <div id="new-asl-multiselect" class="multiselect-container"></div>
-                </div>
-                <div id="new-locations-container" class="space-y-3"></div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4">
-                    <input type="tel" id="new-doctor-phone" placeholder="Telefono (generico)" class="p-3 border border-slate-300 rounded-lg">
-                    <input type="email" id="new-doctor-email" placeholder="Email (generica)" class="p-3 border border-slate-300 rounded-lg">
-                    <textarea id="new-doctor-notes" placeholder="Note..." class="md:col-span-2 p-3 border border-slate-300 rounded-lg" rows="2"></textarea>
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-transform hover:scale-105">
-                    Aggiungi Medico
-                </button>
-            </form>
-        </div>
-
-        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-center">
-                <input type="search" id="search-box" placeholder="Cerca medico o ASL..." class="w-full p-2 border border-slate-300 rounded-lg">
-                <select id="filter-specialization" class="w-full p-2 border border-slate-300 rounded-lg">
-                    <option value="all">Tutte le specializzazioni</option>
-                </select>
-                <div class="md:col-span-2 xl:col-span-1 flex flex-col sm:flex-row flex-wrap gap-2 justify-start md:justify-end">
-                    <button id="manage-districts-btn" class="bg-teal-500 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-teal-600">Gestisci Distretti</button>
-                    <button id="sort-name" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Nome</button>
-                    <button id="sort-status" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Stato</button>
-                    <button id="sort-visited" class="sort-btn bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium">Visita</button>
+                <div class="border-t border-slate-200 mt-4 pt-4 flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
+                    <input type="file" id="import-csv-input" class="hidden" accept=".csv">
+                    <button id="import-csv-btn" class="bg-sky-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-sky-600">Importa CSV</button>
+                    <button id="export-csv" class="bg-emerald-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-emerald-600">Esporta CSV Completo</button>
+                    <button id="export-names-btn" class="bg-purple-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-purple-600">Esporta Solo Nomi</button>
                 </div>
             </div>
-            <div class="border-t border-slate-200 mt-4 pt-4 flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
-                <input type="file" id="import-csv-input" class="hidden" accept=".csv">
-                <button id="import-csv-btn" class="bg-sky-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-sky-600">Importa CSV</button>
-                <button id="export-csv" class="bg-emerald-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-emerald-600">Esporta CSV Completo</button>
-                <button id="export-names-btn" class="bg-purple-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-purple-600">Esporta Solo Nomi</button>
-            </div>
-        </div>
 
-        <div id="doctors-list" class="space-y-4"></div>
+            <div id="doctors-list" class="space-y-4"></div>
+        </div>
     </div>
 
     <!-- Modals -->
@@ -221,7 +234,7 @@
     <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- TUA CONFIGURAZIONE FIREBASE ---
@@ -246,9 +259,13 @@
         let currentSearch = '';
         let currentSpecializationFilter = 'all';
         let userId = null;
-        let isInitialLoad = true;
+        let unsubscribeDoctors, unsubscribeDistricts;
 
         const ui = {
+            authScreen: document.getElementById('auth-screen'),
+            appContent: document.getElementById('app-content'),
+            loginBtn: document.getElementById('login-btn'),
+            logoutBtn: document.getElementById('logout-btn'),
             loadingOverlay: document.getElementById('loading-overlay'),
             addForm: document.getElementById('add-doctor-form'),
             doctorsList: document.getElementById('doctors-list'),
@@ -265,8 +282,27 @@
         }
 
         onAuthStateChanged(auth, user => {
-            if (user) { userId = user.uid; loadAllData(); } 
-            else { signInAnonymously(auth).catch(error => console.error("Anonymous sign-in error", error)); }
+            if (user) {
+                userId = user.uid;
+                ui.authScreen.classList.add('hidden');
+                ui.appContent.classList.remove('hidden');
+                loadAllData();
+            } else {
+                userId = null;
+                ui.authScreen.classList.remove('hidden');
+                ui.appContent.classList.add('hidden');
+                if (unsubscribeDoctors) unsubscribeDoctors();
+                if (unsubscribeDistricts) unsubscribeDistricts();
+            }
+        });
+
+        ui.loginBtn.addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(error => console.error("Login error", error));
+        });
+
+        ui.logoutBtn.addEventListener('click', () => {
+            signOut(auth).catch(error => console.error("Logout error", error));
         });
 
         function getCollectionRef(name) {
@@ -274,14 +310,16 @@
         }
 
         function loadAllData() {
-            onSnapshot(getCollectionRef('asl_districts'), (snapshot) => {
+            let isInitialLoad = true;
+
+            unsubscribeDistricts = onSnapshot(getCollectionRef('asl_districts'), (snapshot) => {
                 masterDistricts = snapshot.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => a.name.localeCompare(b.name));
                 newAslMultiSelect.updateOptions(masterDistricts.map(d => d.name));
                 editAslMultiSelect.updateOptions(masterDistricts.map(d => d.name));
                 renderDistrictsList();
             });
 
-            onSnapshot(getCollectionRef('doctors'), async (snapshot) => {
+            unsubscribeDoctors = onSnapshot(getCollectionRef('doctors'), async (snapshot) => {
                 if (isInitialLoad && snapshot.empty) { await populateWithInitialList(); }
                 if (isInitialLoad) { updateActiveSortButton(); isInitialLoad = false; }
                 
