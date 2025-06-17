@@ -77,6 +77,10 @@
         .actions-dropdown {
             transition: opacity 0.2s ease, transform 0.2s ease;
         }
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
@@ -104,37 +108,44 @@
                 <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-sm">Esci</button>
             </header>
 
-            <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-                <h2 class="text-2xl font-semibold text-slate-700 mb-4">Aggiungi Nuovo Medico</h2>
-                <form id="add-doctor-form" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                        <input type="text" id="new-doctor-name" placeholder="Nome e Cognome" class="p-3 border border-slate-300 rounded-lg" required>
-                        <select id="new-doctor-specialization" class="p-3 border border-slate-300 rounded-lg">
-                            <option value="">Nessuna Specializzazione</option>
-                            <option value="Fisiatra">Fisiatra</option>
-                            <option value="Ortopedico">Ortopedico</option>
-                            <option value="Neuropsichiatra Infantile">Neuropsichiatra Infantile</option>
-                            <option value="Neurologo">Neurologo</option>
-                            <option value="Altro">Altro...</option>
-                        </select>
-                        <input type="text" id="new-doctor-specialization-other" placeholder="Specifica specializzazione" class="p-3 border border-slate-300 rounded-lg hidden md:col-span-2">
+            <div class="bg-white rounded-xl shadow-lg mb-8">
+                <button id="add-doctor-toggle" class="w-full p-6 text-left">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-semibold text-slate-700">Aggiungi Nuovo Medico</h2>
+                        <i id="add-doctor-icon" class="fas fa-plus text-slate-500 transition-transform"></i>
                     </div>
+                </button>
+                <div id="add-doctor-form-container" class="collapsible-content max-h-0">
+                    <form id="add-doctor-form" class="space-y-4 p-6 pt-0">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                            <input type="text" id="new-doctor-name" placeholder="Nome e Cognome" class="p-3 border border-slate-300 rounded-lg" required>
+                            <select id="new-doctor-specialization" class="p-3 border border-slate-300 rounded-lg">
+                                <option value="">Nessuna Specializzazione</option>
+                                <option value="Fisiatra">Fisiatra</option>
+                                <option value="Ortopedico">Ortopedico</option>
+                                <option value="Neuropsichiatra Infantile">Neuropsichiatra Infantile</option>
+                                <option value="Neurologo">Neurologo</option>
+                                <option value="Altro">Altro...</option>
+                            </select>
+                            <input type="text" id="new-doctor-specialization-other" placeholder="Specifica specializzazione" class="p-3 border border-slate-300 rounded-lg hidden md:col-span-2">
+                        </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Distretti ASL</label>
-                        <div id="new-asl-multiselect" class="multiselect-container"></div>
-                    </div>
-                    <div id="new-locations-container" class="space-y-3"></div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Distretti ASL</label>
+                            <div id="new-asl-multiselect" class="multiselect-container"></div>
+                        </div>
+                        <div id="new-locations-container" class="space-y-3"></div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4">
-                        <input type="tel" id="new-doctor-phone" placeholder="Telefono (generico)" class="p-3 border border-slate-300 rounded-lg">
-                        <input type="email" id="new-doctor-email" placeholder="Email (generica)" class="p-3 border border-slate-300 rounded-lg">
-                        <textarea id="new-doctor-notes" placeholder="Note..." class="md:col-span-2 p-3 border border-slate-300 rounded-lg" rows="2"></textarea>
-                    </div>
-                    <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-transform hover:scale-105">
-                        Aggiungi Medico
-                    </button>
-                </form>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4">
+                            <input type="tel" id="new-doctor-phone" placeholder="Telefono (generico)" class="p-3 border border-slate-300 rounded-lg">
+                            <input type="email" id="new-doctor-email" placeholder="Email (generica)" class="p-3 border border-slate-300 rounded-lg">
+                            <textarea id="new-doctor-notes" placeholder="Note..." class="md:col-span-2 p-3 border border-slate-300 rounded-lg" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-transform hover:scale-105">
+                            Aggiungi Medico
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow-lg mb-8 space-y-4">
@@ -274,6 +285,9 @@
             logoutBtn: document.getElementById('logout-btn'),
             loadingOverlay: document.getElementById('loading-overlay'),
             addForm: document.getElementById('add-doctor-form'),
+            addFormContainer: document.getElementById('add-doctor-form-container'),
+            addDoctorToggle: document.getElementById('add-doctor-toggle'),
+            addDoctorIcon: document.getElementById('add-doctor-icon'),
             doctorsList: document.getElementById('doctors-list'),
             editModal: document.getElementById('edit-modal'),
             historyModal: document.getElementById('history-modal'),
@@ -945,6 +959,26 @@
         document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
             confirmDialog.classList.add('hidden');
             confirmDialog.classList.remove('open');
+        });
+
+        ui.addDoctorToggle.addEventListener('click', () => {
+            const container = ui.addFormContainer;
+            const icon = ui.addDoctorIcon;
+            const isOpen = !container.classList.contains('max-h-0');
+
+            if (isOpen) {
+                container.style.maxHeight = '0px';
+                container.classList.add('max-h-0');
+                container.classList.remove('pt-0', 'p-6');
+                icon.classList.remove('fa-minus');
+                icon.classList.add('fa-plus');
+            } else {
+                container.style.maxHeight = container.scrollHeight + "px";
+                container.classList.remove('max-h-0');
+                 container.classList.add('p-6', 'pt-0');
+                icon.classList.add('fa-minus');
+                icon.classList.remove('fa-plus');
+            }
         });
         
     </script>
