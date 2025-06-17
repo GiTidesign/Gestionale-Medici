@@ -281,6 +281,7 @@
         let userId = null;
         let unsubscribeDoctors, unsubscribeDistricts;
         let isCompactView = false;
+        let expandedDoctorId = null;
 
         const ui = {
             authScreen: document.getElementById('auth-screen'),
@@ -403,16 +404,19 @@
                 const doctorCard = document.createElement('div');
                 doctorCard.className = 'bg-white p-5 rounded-xl shadow-md';
 
-                if(isCompactView){
+                const isExpanded = isCompactView && doctor.id === expandedDoctorId;
+
+                if(isCompactView && !isExpanded){
                     doctorCard.innerHTML = `
                     <div class="flex items-center gap-4">
                         <span class="text-slate-400 font-semibold">${index + 1}.</span>
                         <div class="status-dot rounded-full ${status.color}"></div>
                         <h3 class="flex-grow text-lg font-bold text-slate-800">${doctor.name}</h3>
+                        <button data-id="${doctor.id}" class="expand-one-btn text-slate-500 p-2 w-10 h-10 rounded-lg hover:bg-slate-200"><i class="fas fa-caret-down"></i></button>
                         <button data-id="${doctor.id}" class="visit-btn flex-shrink-0 bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">Visita</button>
                     </div>`;
                 } else {
-                    const locationsHTML = (doctor.locations || []).map(loc => `
+                     const locationsHTML = (doctor.locations || []).map(loc => `
                         <div class="flex items-start mt-1">
                             <i class="fa-solid fa-hospital-user fa-fw w-5 mr-1 text-slate-400 mt-1"></i>
                             <span class="bg-indigo-100 text-indigo-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${loc.district}</span>
@@ -425,6 +429,7 @@
                                     <span class="text-lg font-semibold text-slate-400 w-8 text-right mr-2">${index + 1}.</span>
                                     <div class="status-dot rounded-full ${status.color} mr-3"></div>
                                     <h3 class="text-xl font-bold text-slate-800">${doctor.name}</h3>
+                                    ${isCompactView ? `<button data-id="${doctor.id}" class="collapse-one-btn text-slate-500 p-2 w-10 h-10 rounded-lg hover:bg-slate-200 ml-auto"><i class="fas fa-caret-up"></i></button>` : ''}
                                 </div>
                                 <div class="pl-4 sm:pl-16 space-y-2">
                                     ${doctor.specialization ? `<p class="text-sm font-semibold text-indigo-700"><i class="fa-solid fa-user-doctor fa-fw w-5 mr-1 text-slate-400"></i>${doctor.specialization}</p>` : ''}
@@ -501,6 +506,17 @@
                 return;
             }
 
+            if (button.classList.contains('expand-one-btn')) {
+                expandedDoctorId = id;
+                renderDoctors();
+                return;
+            }
+            if (button.classList.contains('collapse-one-btn')) {
+                expandedDoctorId = null;
+                renderDoctors();
+                return;
+            }
+
             const doctorRef = doc(getCollectionRef('doctors'), id);
             const doctor = doctors.find(d => d.id === id);
 
@@ -539,7 +555,8 @@
         ui.toggleViewBtn.innerHTML = `<i class="fa-solid fa-list-ul mr-2"></i>Vista Compatta`;
         ui.toggleViewBtn.addEventListener('click', () => {
             isCompactView = !isCompactView;
-            ui.toggleViewBtn.innerHTML = isCompactView ? `<i class="fa-solid fa-list-ul mr-2"></i>Mostra Dettagli` : `<i class="fa-solid fa-bars-staggered mr-2"></i>Vista Compatta`;
+            expandedDoctorId = null;
+            ui.toggleViewBtn.innerHTML = isCompactView ? `<i class="fa-solid fa-table-list mr-2"></i>Mostra Dettagli` : `<i class="fa-solid fa-list-ul mr-2"></i>Vista Compatta`;
             renderDoctors();
         });
         
@@ -996,4 +1013,3 @@
     </script>
 </body>
 </html>
-
